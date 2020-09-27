@@ -16,7 +16,30 @@ const io = require("socket.io")(server);
 
 io.sockets.on("error", (e) => console.log(e));
 io.sockets.on("connection", function (socket) {
-  console.log(socket.id);
+  socket.on("broadcaster", function () {
+    broadcaster = socket.id;
+    socket.broadcast.emit("broadcaster");
+  });
+  socket.on("TextEmit", function (message) {
+    socket.broadcast.emit("TextBroadCast", message);
+    console.log(socket.id);
+    console.log(message);
+  });
+  socket.on("watcher", function () {
+    broadcaster && socket.to(broadcaster).emit("watcher", socket.id);
+  });
+  socket.on("offer", function (id /* of the watcher */, message) {
+    socket.to(id).emit("offer", socket.id /* of the broadcaster */, message);
+  });
+  socket.on("answer", function (id /* of the broadcaster */, message) {
+    socket.to(id).emit("answer", socket.id /* of the watcher */, message);
+  });
+  socket.on("candidate", function (id, message) {
+    socket.to(id).emit("candidate", socket.id, message);
+  });
+  socket.on("disconnect", function () {
+    broadcaster && socket.to(broadcaster).emit("bye", socket.id);
+  });
 });
 
 server.listen(port, () => {
