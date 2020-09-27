@@ -1,7 +1,9 @@
 const credentials = require("./credentials");
 const express = require("express");
 const app = express();
+let broadcasters = [];
 let server;
+let port;
 if (credentials.key && credentials.cert) {
   const https = require("https");
   server = https.createServer(credentials, app);
@@ -11,21 +13,25 @@ if (credentials.key && credentials.cert) {
   server = http.createServer(app);
   port = 3001;
 }
-
 const io = require("socket.io")(server);
-
 io.sockets.on("error", (e) => console.log(e));
 io.sockets.on("connection", function (socket) {
   socket.on("broadcaster", function () {
-    broadcaster = socket.id;
+    let connectedBroadcasters = broadcasters.find(
+      (connectedBroadcasters) => connectedBroadcasters === socket.id
+    );
+    if (!connectedBroadcasters) {
+      broadcasters.push(socket.id);
+    }
     socket.broadcast.emit("broadcaster");
   });
   socket.on("TextEmit", function (message) {
     socket.broadcast.emit("TextBroadCast", message);
-    console.log(socket.id);
-    console.log(message);
   });
   socket.on("watcher", function () {
+    let broadcaster = broadcasters.find(
+      (broadcaster) => broadcaster !== socket.id
+    );
     broadcaster && socket.to(broadcaster).emit("watcher", socket.id);
   });
   socket.on("offer", function (id /* of the watcher */, message) {
@@ -38,10 +44,10 @@ io.sockets.on("connection", function (socket) {
     socket.to(id).emit("candidate", socket.id, message);
   });
   socket.on("disconnect", function () {
+    let broadcaster = broadcasters.find(
+      (broadcaster) => broadcaster !== socket.id
+    );
     broadcaster && socket.to(broadcaster).emit("bye", socket.id);
   });
 });
-
-server.listen(port, () => {
-  console.log("server on!");
-});
+server.listen(port, () => console.log(`Server is running on port ${port}`));
