@@ -15,6 +15,9 @@ if (credentials.key && credentials.cert) {
 const io = require("socket.io")(server);
 
 io.sockets.on("error", (e) => console.log(e));
+io.sockets.on("connection", function (socket) {
+  console.log(socket.id);
+});
 
 server.listen(port, () => {
   console.log("server on!");
