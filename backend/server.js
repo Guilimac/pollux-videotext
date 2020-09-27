@@ -12,6 +12,10 @@ if (credentials.key && credentials.cert) {
   port = 3001;
 }
 
+const io = require("socket.io")(server);
+
+io.sockets.on("error", (e) => console.log(e));
+
 server.listen(port, () => {
   console.log("server on!");
 });
